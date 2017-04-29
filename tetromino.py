@@ -1,3 +1,5 @@
+# Adapted from: https://inventwithpython.com/makinggames.pdf
+
 import random, time, pygame, sys
 from pygame.locals import *
 
@@ -56,13 +58,110 @@ S_SHAPE_TEMPLATE = [['.....',
                      '...0.',
                      '.....']] # rotations of S shape piece
 
-SHAPES = {'S': S_SHAPE_TEMPLATE}
+Z_SHAPE_TEMPLATE = [['.....',
+                     '.....',
+                     '.OO..',
+                     '..OO.',
+                     '.....'],
+                    ['.....',
+                     '..O..',
+                     '.OO..',
+                     '.O...',
+                     '.....']]
 
-SONG1 = '[AMFS][AMV] Ichinen Nikagetsu Hatsuka (1-2--20-) - BRIGHT (Vietsub).mp3'
-SONG2 = 'AMV - Au Tabi Suki ni Natte - Bright.mp3'
-SONG3 = 'AMV Sayaka Shionoya - Calling Out.mp3'
-SONG4 = 'Arigatou.AishitetaHito.mp3'
-SONG5 = 'Kirai Demo Suki Aishiteru- BRIGHT [Vietsub].mp3'
+I_SHAPE_TEMPLATE = [['..O..',
+                     '..O..',
+                     '..O..',
+                     '..O..',
+                     '.....'],
+                    ['.....',
+                     '.....',
+                     'OOOO.',
+                     '.....',
+                     '.....']]
+
+O_SHAPE_TEMPLATE = [['.....',
+                     '.....',
+                     '.OO..',
+                     '.OO..',
+                     '.....']]
+
+J_SHAPE_TEMPLATE = [['.....',
+                     '.O...',
+                     '.OOO.',
+                     '.....',
+                     '.....'],
+                    ['.....',
+                     '..OO.',
+                     '..O..',
+                     '..O..',
+                     '.....'],
+                    ['.....',
+                     '.....',
+                     '.OOO.',
+                     '...O.',
+                     '.....'],
+                    ['.....',
+                     '..O..',
+                     '..O..',
+                     '.OO..',
+                     '.....']]
+
+L_SHAPE_TEMPLATE = [['.....',
+                     '...O.',
+                     '.OOO.',
+                     '.....',
+                     '.....'],
+                    ['.....',
+                     '..O..',
+                     '..O..',
+                     '..OO.',
+                     '.....'],
+                    ['.....',
+                     '.....',
+                     '.OOO.',
+                     '.O...',
+                     '.....'],
+                    ['.....',
+                     '.OO..',
+                     '..O..',
+                     '..O..',
+                     '.....']]
+
+T_SHAPE_TEMPLATE = [['.....',
+                     '..O..',
+                     '.OOO.',
+                     '.....',
+                     '.....'],
+                    ['.....',
+                     '..O..',
+                     '..OO.',
+                     '..O..',
+                     '.....'],
+                    ['.....',
+                     '.....',
+                     '.OOO.',
+                     '..O..',
+                     '.....'],
+                    ['.....',
+                     '..O..',
+                     '.OO..',
+                     '..O..',
+                     '.....']]
+
+SHAPES = {'S': S_SHAPE_TEMPLATE,
+          'Z': Z_SHAPE_TEMPLATE,
+          'I': I_SHAPE_TEMPLATE,
+          'O': O_SHAPE_TEMPLATE,
+          'J': J_SHAPE_TEMPLATE,
+          'L': L_SHAPE_TEMPLATE,
+          'T': T_SHAPE_TEMPLATE}
+
+SONG1 = 'Arigatou.AishitetaHito.mp3'
+SONG2 = 'Au.Tabi.Suki.ni.Natte_BRIGHT.mp3'
+SONG3 = 'Calling.Out_Sayaka.Shionoya.mp3'
+SONG4 = 'Ichinen.Nikagetsu.Hatsuka_BRIGHT.mp3'
+SONG5 = 'Kirai.Demo.Suki.Aishiteru_BRIGHT.mp3'
 
 SONGS = [SONG1, SONG2, SONG3, SONG4, SONG5]
 
@@ -78,6 +177,7 @@ def main():
 
     while True: # game loop
         runGame()
+        showTextScreen('Game Over')
         
 
 def runGame():
@@ -91,12 +191,12 @@ def runGame():
     movingRight = False
     score = 0
     level = 0
-    fallFreq = MOVE_VERT_FREQ
+    fallFreq = MOVE_VERT_FREQ / 2
 
     fallingPiece = getNewPiece()
     nextPiece = getNewPiece()
 
-    currentSong = 0
+    currentSong = random.randint(0, len(SONGS) - 1)
     pygame.mixer.music.load(SONGS[currentSong])
     pygame.mixer.music.play(-1, 0.0)
     musicON = True
@@ -109,12 +209,26 @@ def runGame():
             lastFallTime = time.time() # reset lastFallTime
 
             if not isValidPosition(board, fallingPiece):
-                return # can't fit new piece on board, so game over
-            
-        checkForQuit()
+                # can't fit new piece on board, so game over
+                pygame.mixer.music.stop()
+                return 
+
         for event in pygame.event.get():    # event handling loop
-            if KEYUP == event.type:
-                if K_m == event.key: # mute
+            if QUIT == event.type:
+                terminate()
+            elif KEYUP == event.type:
+                if K_ESCAPE == event.key:
+                    terminate()
+                elif K_p == event.key: # pause
+                    DISPLAY_SURF.fill(BG_COLOR)
+                    pygame.mixer.music.pause()
+                    showTextScreen('Paused')
+                    if True == musicON:
+                        pygame.mixer.music.unpause()
+                    lastFallTime = time.time()
+                    lastMoveDownTime = time.time()
+                    lastMoveSidewaysTime = time.time()
+                elif K_m == event.key: # mute
                     if True == musicON:
                         pygame.mixer.music.pause()
                         musicON = False
@@ -190,7 +304,7 @@ def runGame():
         pygame.display.update()
         FPS_CLOCK.tick(FPS)
 
-    
+   
 def makeTextObjs(text, font, color):
     surf = font.render(text, True, color)
     return surf, surf.get_rect()
@@ -199,16 +313,6 @@ def makeTextObjs(text, font, color):
 def terminate():
     pygame.quit()
     sys.exit()
-    
-    
-def checkForKeyPress():
-    checkForQuit()
-
-    for event in pygame.event.get([KEYDOWN, KEYUP]):
-        if KEYDOWN == event.type:
-            continue    # remove KEYDOWN events from event queue
-        return event.key
-    return None
 
 
 def showTextScreen(text):
@@ -227,14 +331,15 @@ def showTextScreen(text):
     pressKeyRect.center = (WIN_WIDTH/2, WIN_HEIGHT/2 + 100)
     DISPLAY_SURF.blit(pressKeySurf, pressKeyRect)
 
-    while checkForKeyPress() == None:
+    while True:
+        for event in pygame.event.get():
+            if QUIT == event.type:
+                terminate()
+            if KEYUP == event.type:
+                return
+            
         pygame.display.update()
         FPS_CLOCK.tick()
-        
-
-def checkForQuit():
-    for event in pygame.event.get(QUIT):
-        terminate()
 
 
 def getNewPiece():
