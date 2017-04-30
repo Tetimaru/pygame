@@ -190,8 +190,7 @@ def runGame():
     movingLeft = False
     movingRight = False
     score = 0
-    level = 0
-    fallFreq = MOVE_VERT_FREQ / 2
+    level, fallFreq = calculateLevelAndFallFreq(score)
 
     fallingPiece = getNewPiece()
     nextPiece = getNewPiece()
@@ -269,9 +268,21 @@ def runGame():
                         # modulo works with negative numbers
                         fallingPiece['rotation'] = (fallingPiece['rotation'] - 1) % \
                                                    len(SHAPES[fallingPiece['shape']])
-                        
-                #elif (K_DOWN == event.key or K_s == event.key):
-                 #   movingDown = False
+                # down key makes piece fall faster
+                elif (K_DOWN == event.key or K_s == event.key):
+                    movingDown = True
+                    if isValidPosition(board, fallingPiece, adjY=1):
+                        fallingPiece['y'] += 1
+                    lastMoveDownTime = time.time()
+                # space drops the falling piece onto the board
+                elif K_SPACE == event.key:
+                    movingDown = False
+                    movingLeft = False
+                    movingRight = False
+                    for i in range(1, BOARD_HEIGHT):
+                        if not isValidPosition(board, fallingPiece, adjY=i):
+                            break
+                    fallingPiece['y'] += i - 1
 
         # move the block according to user input
         if (movingLeft or movingRight) and time.time() - lastMoveSidewaysTime > MOVE_HORIZ_FREQ:
@@ -281,12 +292,18 @@ def runGame():
                 fallingPiece['x'] += 1
             lastMoveSidewaysTime = time.time()
 
+        if movingDown and time.time() - lastMoveDownTime > MOVE_VERT_FREQ:
+            fallingPiece['y'] += 1
+            lastMoveDownTime = time.time()
+
         # piece falls by itself
         if time.time() - lastFallTime > fallFreq:
             # see if piece has landed
             if not isValidPosition(board, fallingPiece, adjY=1):
                 # set it on the board
                 addToBoard(board, fallingPiece)
+                score += removeCompleteLines(board)
+                level, fallFreq = calculateLevelAndFallFreq(score)
                 fallingPiece = None
             else:
                 # move block down
@@ -342,6 +359,14 @@ def showTextScreen(text):
         FPS_CLOCK.tick()
 
 
+def calculateLevelAndFallFreq(score):
+    # Based on the score, return level player is on and how many seconds pass until
+    # a piece falls one space
+    level = int(score/10) + 1
+    fallFreq = 0.27 - (level * 0.02)
+    return level, fallFreq
+
+
 def getNewPiece():
     # return a random new piece in a random rotation and color  
     shape = random.choice(list(SHAPES.keys()))
@@ -392,6 +417,34 @@ def isValidPosition(board, piece, adjX=0, adjY=0):
     return True
 
 
+def isCompleteLine(board, y):
+    for x in range(BOARD_WIDTH):
+        if BLANK == board[x][y]:
+            return False
+    return True
+
+
+def removeCompleteLines(board):
+    # returns the number of complete lines removed
+    numLinesRemoved = 0
+    y = BOARD_HEIGHT - 1 # start at the bottom of the board
+    while y >= 0:
+        if isCompleteLine(board, y):
+            # remove line and pull all lines above down
+            for pullDownY in range(y, 0, -1):
+                for x in range(BOARD_WIDTH):
+                    board[x][pullDownY] = board[x][pullDownY-1]
+            # set top line to blank
+            for x in range(BOARD_WIDTH):
+                board[x][0] = BLANK
+            numLinesRemoved += 1
+            # Note that we do not decrement y, because the row above the currently completed
+            # row will be pulled down to the current y index
+        else:
+            y -= 1
+    return numLinesRemoved
+
+            
 def convertToPixelCoords(board_x, board_y):
     # map board (x, y) coordinates to pixel (x, y) coordinates
     return (X_MARGIN + BOX_SIZE*board_x, TOP_MARGIN + BOX_SIZE*board_y) 
