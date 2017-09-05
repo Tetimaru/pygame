@@ -60,8 +60,9 @@ def main():
     revealedBoxes = generateRevealedBoxesData(False)
 
     firstSelection = None # stores (x, y) coordinates of first box clicked
-
-    pygame.mixer.music.load('Arigatou.AishitetaHito.mp3')
+    
+    music = 'Arigatou.AishitetaHito.mp3' # ***can add own music file (.mp3, .mid, .ogg)
+    pygame.mixer.music.load(music) 
     pygame.mixer.music.play(-1, 0.0)
     musicON = True
     
