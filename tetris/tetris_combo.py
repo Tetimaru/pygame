@@ -23,6 +23,7 @@ TOP_MARGIN = WIN_HEIGHT - (BOARD_HEIGHT * BOX_SIZE) - 5
 WHITE        = (255, 255, 255)
 GRAY         = (185, 185, 185) 
 BLACK        = (0, 0, 0)
+
 RED          = (155, 0, 0)
 LIGHT_RED     = (175, 20, 20)
 GREEN        = (0, 155, 0)
@@ -31,14 +32,30 @@ BLUE         = (0, 0, 155)
 LIGHT_BLUE    = (20, 20, 175)
 YELLOW       = (155, 155, 0)  
 LIGHT_YELLOW  = (175, 175, 20)
+FIVE         = (155, 0, 155)
+LIGHT_FIVE    = (175, 20, 175)
+SIX       = (0, 155, 155)  
+LIGHT_SIX  = (20, 175, 175)
 
 BORDER_COLOR = (135, 206, 250)
 GRID_COLOR = (125, 125, 125)
 BG_COLOR = BLACK
 TEXT_COLOR = WHITE
 TEXT_SHADOW_COLOR = GRAY
-COLORS = (BLUE, GREEN, RED, YELLOW)
-LIGHT_COLORS = (LIGHT_BLUE, LIGHT_GREEN, LIGHT_RED, LIGHT_YELLOW)
+COLORS = ('S': BLUE,
+          'Z': GREEN,
+          'I': RED,
+          'O': YELLOW,
+          'J': FIVE,
+          'L': SIX,
+          'T': BLUE }
+LIGHT_COLORS = ('S': LIGHT_BLUE,
+              'Z': LIGHT_GREEN,
+              'I': LIGHT_RED,
+              'O': LIGHT_YELLOW,
+              'J': LIGHT_FIVE,
+              'L': LIGHT_SIX,
+              'T': LIGHT_BLUE }
 
 assert len(COLORS) == len(LIGHT_COLORS) # each color must have light color
 
@@ -167,6 +184,11 @@ SONG5 = 'Kirai.Demo.Suki.Aishiteru_BRIGHT.mp3'
 
 SONGS = [SONG1, SONG2, SONG3, SONG4, SONG5]
 
+SCORES = [0, 10, 25, 45, 75] # i-th index represents score earned when clearing i lines at once
+COMBOS = [1.0, 1.1, 1.25, 1.5, 2] # i-th index represents multiplier to score earned when
+# clearing lines with i+1 combo
+
+
 def main():
     global FPS_CLOCK, DISPLAY_SURF, BASIC_FONT, BIG_FONT
     pygame.init()
@@ -192,6 +214,7 @@ def runGame():
     movingLeft = False
     movingRight = False
     score = 0
+    combo = 0
     level, fallFreq = calculateLevelAndFallFreq(score)
 
     fallingPiece = getNewPiece()
@@ -319,7 +342,12 @@ def runGame():
             if not isValidPosition(board, fallingPiece, adjY=1):
                 # set it on the board
                 addToBoard(board, fallingPiece)
-                score += removeCompleteLines(board)
+                scoreAdd = removeCompleteLines(board, combo)
+                if scoreAdd > 0:
+                    combo += 1
+                    score += scoreAdd
+                else:
+                    combo = 0     
                 level, fallFreq = calculateLevelAndFallFreq(score)
                 fallingPiece = None
                 canHold = True
@@ -381,8 +409,9 @@ def showTextScreen(text):
 def calculateLevelAndFallFreq(score):
     # Based on the score, return level player is on and how many seconds pass until
     # a piece falls one space
-    level = int(score/10) + 1
-    fallFreq = 0.27 - (level * 0.02)
+    # level = int(score/10) + 1
+    level = 1
+    fallFreq = 0.37 - (level * 0.02)
     return level, fallFreq
 
 
@@ -396,7 +425,7 @@ def getNewPiece():
                 # (x, y) coordinates of top left of template
                 'x': int(BOARD_WIDTH/2) - int(TEMPLATE_WIDTH/2), 
                 'y': -2, # start it above the board (i.e. less than 0)
-                'color': random.randint(0, len(COLORS)-1)}
+                'color': shape}
     return newPiece
 
 
@@ -443,8 +472,21 @@ def isCompleteLine(board, y):
     return True
 
 
-def removeCompleteLines(board):
-    # returns the number of complete lines removed
+def removeCompleteLines(board, combo):
+    # returns the score gained from removing lines
+    ##############
+    # 1 line removed - 10 pts
+    # 2 - 25
+    # 3 - 45
+    # 4 - 75
+    ##############
+    # combo multiplier
+    # 1 combo - 1x
+    # 2 combo - 1.1x
+    # 3 combo - 1.25x
+    # 4 combo - 1.5x
+    # 5+ combo - 2x
+    
     numLinesRemoved = 0
     y = BOARD_HEIGHT - 1 # start at the bottom of the board
     while y >= 0:
@@ -461,7 +503,7 @@ def removeCompleteLines(board):
             # row will be pulled down to the current y index
         else:
             y -= 1
-    return numLinesRemoved
+    return int(SCORES[numLinesRemoved] * COMBOS[combo])
 
             
 def convertToPixelCoords(board_x, board_y):
