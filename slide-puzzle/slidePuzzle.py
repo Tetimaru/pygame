@@ -87,7 +87,7 @@ def main():
     XMARGIN = int((WINDOWWIDTH - (TILESIZE * BOARDWIDTH + (BOARDWIDTH-1))) / 2)
     YMARGIN = int((WINDOWHEIGHT - (TILESIZE * BOARDHEIGHT + (BOARDHEIGHT-1))) / 2)
     tileColors = [GREEN, RED, BLUE, YELLOW]
-    TILECOLOR = tileColors[0]
+    TILECOLOR = random.choice(tileColors)
     
     # Store the option buttons and their rectangles in OPTIONS
     RESET_SURF, RESET_RECT = makeText('Reset', BUTTONTEXTCOLOR, GRAY, \

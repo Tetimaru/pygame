@@ -1,5 +1,10 @@
-# Memory Puzzle (1)
-# from http://inventwithpython.com/makinggames.pdf
+# Memory Puzzle
+#
+# **********************************************************************
+# USAGE: python memorypuzzle.py <row> <col>
+# start the game with row * col tiles, row * col must be an even number
+# default 4 * 4
+# **********************************************************************
 
 import random, pygame, sys
 from pygame.locals import *
@@ -11,8 +16,18 @@ REVEALSPEED = 4 # speed boxes' sliding reveals and covers
 BOXSIZE = 40 # box height/width
 GAPSIZE = 10 # size of gap between boxes
 
-BOARDWIDTH = 2 # number of columns of icons
-BOARDHEIGHT = 2 # number of rows of icons
+BOARDWIDTH = 4 # number of columns of icons
+BOARDHEIGHT = 4 # number of rows of icons
+if len(sys.argv) == 1: # no row/col specified, default to 4*4
+    pass
+elif len(sys.argv) == 3:
+    # TODO: check for correct input type
+    BOARDWIDTH = int(sys.argv[2])
+    BOARDHEIGHT = int(sys.argv[1])
+else:
+    print("USAGE: python memorypuzzle.py <row> <col>")
+    sys.exit()
+
 assert (BOARDWIDTH * BOARDHEIGHT) % 2 == 0, 'Noneven number of boxes'
 
 # pixels from edge of screen to board
